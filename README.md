@@ -1,5 +1,9 @@
 # AI Router
 
+```
+pip install airouter
+```
+
 ```python 
 import airouter
 
