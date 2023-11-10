@@ -14,9 +14,9 @@ from airouter.models import (
   GenerationOutput, FunctionCall,
   process_llm, LLM,
 )
+import airouter
 from airouter.utils.interactive import enable_interactiveness
 from airouter.providers.factory import provider_factory
-from airouter import logger
 
 SingleCreateOutput = t.Union[GenerationOutput, t.Tuple[t.Any, GenerationOutput]]
 MultipleCreateOutputs = t.List[SingleCreateOutput]
@@ -214,7 +214,7 @@ class StreamedCompletion(object):
   @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=5),
-    after=after_log(logger, logging.INFO),
+    after=after_log(airouter.logger, logging.INFO),
     retry_error_callback=lambda retry_state: None,
   )
   def _streamed_request_with_retry(self) -> t.Optional[GenerationOutput]:
@@ -237,7 +237,7 @@ class StreamedCompletion(object):
       gen_events = self.provider.get_stream()
     except Exception as e:
       self.provider.last_exception = e
-      logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
+      airouter.logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
       raise e
 
     self.full_generation_output = GenerationOutput()
@@ -281,7 +281,7 @@ class StreamedCompletion(object):
       #endfor
     except Exception as e:
       self.provider.last_exception = e
-      logger.error(f"Exception of type '{type(e)}': {e}")
+      airouter.logger.error(f"Exception of type '{type(e)}': {e}")
       raise e
 
     if self.full_generation_output.content is not None:
@@ -316,7 +316,7 @@ class StreamedCompletion(object):
     #     )
     #     output['usage']['total'] = output['usage']['prompt_tokens'] + output['usage']['completion_tokens']
     #   except Exception as e:
-    #     logger.error("Could not compute tokens", exc_info=True)
+    #     airouter.logger.error("Could not compute tokens", exc_info=True)
     # # endif
 
     self.log_info(f"End call id `{self.call_id}` (provider={self.provider_name}, llm={self.llm})")
@@ -324,4 +324,4 @@ class StreamedCompletion(object):
 
   def log_info(self, msg):
     if self.verbose:
-      logger.info(msg)
+      airouter.logger.info(msg)
