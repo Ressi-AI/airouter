@@ -11,6 +11,7 @@ class ProviderName(str, Enum):
   OPENAI = "openai",
   VERTEX_AI_TEXT = "vertex_ai_text"
   AWS_BEDROCK = "aws_bedrock"
+  OLLAMA = "ollama"
 
   @classmethod
   def from_str(cls, value):
@@ -41,6 +42,9 @@ class LLM(str, Enum):
   ANTROPHIC_CLAUDE_V2 = "anthropic.claude-v2"
 
   PALM_TEXT_BISON_32K = "text-bison-32k"
+
+  MISTRAL = 'mistral'
+  LLAMA2 = 'llama2'
 
   @classmethod
   def from_str(cls, value):
@@ -144,6 +148,10 @@ if True:
     ],
     ProviderName.VERTEX_AI_TEXT: [
       LLM.PALM_TEXT_BISON_32K,
+    ],
+    ProviderName.OLLAMA: [
+      LLM.MISTRAL,
+      LLM.LLAMA2
     ]
   }
 
@@ -171,6 +179,9 @@ if True:
     LLM.ANTROPHIC_CLAUDE_V2: 100_000,
 
     LLM.PALM_TEXT_BISON_32K: 32_000,
+
+    LLM.MISTRAL: 8_192, # TODO: recheck
+    LLM.LLAMA2: 4_096
   }
 
   map_role_for_prompt = {
