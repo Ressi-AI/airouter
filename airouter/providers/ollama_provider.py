@@ -7,7 +7,6 @@ PROVIDER_CONFIGURED = False
 #
 try:
   import ollama
-#   os.environ['OPENAI_API_KEY'] = config("OPENAI_API_KEY")
   OLLAMA_HOST = config("OLLAMA_HOST", None)
   PROVIDER_CONFIGURED = True
 except:
@@ -23,7 +22,6 @@ class OllamaProvider(BaseProvider):
     response = ollama_client.chat(
       **self.cleaned_parameters
     )
-    # response = client.chat.completions.create(**self.cleaned_parameters)
     return response
 
   def get_generation_output(self, event) -> GenerationOutput:
@@ -32,11 +30,4 @@ class OllamaProvider(BaseProvider):
     }
 
     return GenerationOutput(**kwargs)
-
-  # def get_timeout_params(self):
-  #   return {
-  #     'start': 5.0,
-  #     'maximum': 20.0,
-  #     'increment': 5.0,
-  #   }
 

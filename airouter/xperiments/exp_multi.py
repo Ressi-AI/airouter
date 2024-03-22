@@ -9,7 +9,8 @@ if __name__ == '__main__':
   # )
 
   outputs = airouter.StreamedCompletion.create_interactive(
-    models=['llama2'],
+    # models=['mixtral:8x7b'],
+    models=[airouter.models.LLM.LLAMA2_13B],
     messages=[{'role': 'user', 'content': 'write a story about the big Large Language Models convention'}]
   )
 

@@ -12,6 +12,7 @@ from airouter.models import (
 )
 
 
+
 class Schema(BaseModel):
   model: LLM
   messages: Messages
@@ -100,6 +101,10 @@ class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
     for k in keys:
       if self._attrs['parameters'][k] is None:
         self._attrs['parameters'].pop(k)
+      elif isinstance(self._attrs['parameters'][k], httpx.Timeout):
+        timeout = self._attrs['parameters'][k]
+        if timeout.read is None and timeout.connect is None and timeout.write is None and timeout.pool is None:
+          self._attrs['parameters'].pop(k)
     return
 
   def refresh_timings(self):
