@@ -1,4 +1,5 @@
 import json
+import httpx
 from airouter.providers.base_provider import BaseProvider, GenerationOutput
 from airouter.models import map_context_size
 from decouple import config
@@ -49,9 +50,11 @@ class AWSBedrockProvider(BaseProvider):
   def get_response(self):
     aws_config = None
     if self.timeout is not None:
+      if isinstance(self.timeout, float):
+        self.timeout = httpx.Timeout(self.timeout)
       aws_config = Config(
-        connect_timeout=self.timeout,
-        read_timeout=self.timeout,
+        connect_timeout=self.timeout.connect,
+        read_timeout=self.timeout.read,
         retries={'max_attempts': 0}
       )
 
