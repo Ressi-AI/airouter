@@ -4,11 +4,13 @@ import json
 import time
 import statistics
 import numpy as np
+import httpx
 from pydantic import BaseModel, Extra
 from airouter.models import (
   LLM, Messages, Functions, map_context_size, map_role_for_prompt,
   ChatRole, GenerationOutput,
 )
+
 
 class Schema(BaseModel):
   model: LLM
@@ -23,7 +25,11 @@ class Schema(BaseModel):
   stop: t.Optional[t.Union[str, t.List[str]]] = None
   user: t.Optional[str] = None
 
-  timeout: t.Optional[float] = None
+  timeout: t.Optional[float | httpx.Timeout] = None
+
+  class Config:
+    arbitrary_types_allowed = True
+
 
 def basic_statistics(lst):
   if len(lst) == 0:
@@ -32,27 +38,46 @@ def basic_statistics(lst):
       'avg': np.nan, 'median': np.nan,
     }
 
-  max_value = max(lst)
-  min_value = min(lst)
-  avg_value = statistics.mean(lst)
-  median_value = statistics.median(lst)
+  try:
+    max_value = max(lst)
+  except:
+    max_value = np.nan
+
+  try:
+    min_value = min(lst)
+  except:
+    min_value = np.nan
+
+  try:
+    avg_value = statistics.mean(lst)
+  except:
+    avg_value = np.nan
+
+  try:
+    median_value = statistics.median(lst)
+  except:
+    median_value = np.nan
+
   return {
     'min': min_value, 'max': max_value,
     'avg': avg_value, 'median': median_value,
   }
 
-_default_timings = {
-  'response_time': np.nan,
-  'first_event_time': np.nan,
-  'next_events_times': [],
-  'execution_time': np.nan,
-  'speed': np.nan, # chars per second
-}
+
+def _default_timings():
+  return {
+    'response_time': np.nan,
+    'first_event_time': np.nan,
+    'next_events_times': [],
+    'execution_time': np.nan,
+    'speed': np.nan, # chars per second
+  }
+
 
 class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
   _attrs = {
     'parameters': {},
-    'timings': _default_timings,
+    'timings': _default_timings(),
     'last_exception': None,
   }
 
@@ -70,7 +95,7 @@ class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
     self._attrs['last_exception'] = exc
 
   def clean_parameters(self):
-    self._attrs['parameters'] = json.loads(self.json(exclude={'_attrs', 'retry'}))
+    self._attrs['parameters'] = self.model_dump(exclude={'_attrs', 'retry'})
     keys = list(self._attrs['parameters'].keys())
     for k in keys:
       if self._attrs['parameters'][k] is None:
@@ -78,7 +103,7 @@ class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
     return
 
   def refresh_timings(self):
-    self._attrs['timings'] = _default_timings
+    self._attrs['timings'] = _default_timings()
     return
 
   def set_response_time(self, nr_seconds):
@@ -154,7 +179,7 @@ class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
     start = time.time()
     for event in response:
       # TODO event can be None??
-      i+=1
+      i += 1
       end = time.time()
       if i == 0:
         self.set_first_event_time(end-start)

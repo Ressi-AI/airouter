@@ -2,6 +2,7 @@ import logging
 import typing as t
 import uuid
 import time
+import httpx
 import concurrent.futures
 from tenacity import (
   after_log,
@@ -20,6 +21,7 @@ from airouter.providers.factory import provider_factory
 
 SingleCreateOutput = t.Union[GenerationOutput, t.Tuple[t.Any, GenerationOutput]]
 MultipleCreateOutputs = t.List[SingleCreateOutput]
+
 
 class StreamedCompletion(object):
   def __init__(
@@ -107,6 +109,35 @@ class StreamedCompletion(object):
     return StreamedCompletion._create_parallel(lst_kwargs, interactive=True)
 
   @classmethod
+  def generate(
+      cls,
+      call_name: t.Optional[str] = None,
+      completion_timeout: t.Optional[int] = None,
+      request_timeout_start: t.Optional[float] = None,
+      request_timeout_max: t.Optional[float] = None,
+      request_timeout_increment: t.Optional[float] = None,
+      on_first_chunk_callback: t.Optional[t.Callable] = None,
+      on_new_chunk_callback: t.Optional[t.Callable] = None,
+      on_stop_generation_callback: t.Optional[t.Callable] = None,
+      verbose: t.Optional[bool] = True,
+      **llm_params
+  ):
+    completion = cls(
+      call_name=call_name,
+      completion_timeout=completion_timeout,
+      request_timeout_start=request_timeout_start,
+      request_timeout_max=request_timeout_max,
+      request_timeout_increment=request_timeout_increment,
+      on_first_chunk_callback=on_first_chunk_callback,
+      on_new_chunk_callback=on_new_chunk_callback,
+      on_stop_generation_callback=on_stop_generation_callback,
+      verbose=verbose,
+      **llm_params,
+    )
+
+    return completion.generator()
+
+  @classmethod
   def create(
       cls,
       call_name: t.Optional[str] = None,
@@ -132,6 +163,7 @@ class StreamedCompletion(object):
       on_first_chunk_callback=on_first_chunk_callback,
       on_new_chunk_callback=on_new_chunk_callback,
       on_stop_generation_callback=on_stop_generation_callback,
+      return_instance=return_instance,
       verbose=verbose,
       **llm_params,
     )
@@ -211,6 +243,66 @@ class StreamedCompletion(object):
     result = start + (increment * (attempt_number - 1))
     return max(0, min(result, maximum))
 
+  def _provider_stream(self, func):
+    request_timeout_params = self.provider.get_timeout_params() or {}
+    request_timeout = self.compute_request_timeout(
+      attempt_number=func.retry.statistics.get('attempt_number', 1),
+      start=self.request_timeout_start or request_timeout_params.get('start'),
+      maximum=self.request_timeout_max or request_timeout_params.get('maximum'),
+      increment=self.request_timeout_increment or request_timeout_params.get('increment'),
+    )
+
+    self.provider.timeout = httpx.Timeout(request_timeout)
+    self.provider.clean_parameters()
+    self.provider.refresh_timings()
+
+    try:
+      gen_events = self.provider.get_stream()
+      return gen_events
+    except Exception as e:
+      self.provider.last_exception = e
+      airouter.logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
+      raise e
+
+  def _handle_stream_step(self, i, event, start):
+    self.step_generation_output = self.provider.get_generation_output(event)
+    elapsed = time.time() - start
+    finished = self.step_generation_output.finish_reason is not None
+    crt_content = self.step_generation_output.content
+    crt_function_call = self.step_generation_output.function_call
+
+    self.full_generation_output.finish_reason = self.step_generation_output.finish_reason
+
+    first_response = self.full_generation_output.content is None and self.full_generation_output.function_call is None
+
+    if crt_content is not None:
+      if first_response:
+        self.full_generation_output.content = ""
+      self.full_generation_output.content += crt_content
+
+      self.provider.set_speed(len(self.full_generation_output.content) / elapsed)
+
+      if first_response and self.on_first_chunk_callback is not None:
+        self.on_first_chunk_callback(self)
+
+      if not first_response and self.on_new_chunk_callback is not None:
+        res = self.on_new_chunk_callback(self)
+        if res:
+          return 'break'
+
+    elif crt_function_call is not None:
+      if first_response:
+        self.full_generation_output.function_call = FunctionCall(name=crt_function_call.name, arguments='')
+      self.full_generation_output.function_call.arguments += (crt_function_call.arguments or '')
+      self.provider.set_speed(len(self.full_generation_output.function_call.arguments) / elapsed)
+    #endif
+
+    if self._should_stop_prematurely() and not finished:
+      # do not stop prematurely if it's exactly the last chunk
+      return 'return'
+
+    return
+
   @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=5),
@@ -221,67 +313,27 @@ class StreamedCompletion(object):
     if self._should_stop_prematurely():
       return
 
-    request_timeout_params = self.provider.get_timeout_params() or {}
-    request_timeout = self.compute_request_timeout(
-      attempt_number=self._streamed_request_with_retry.retry.statistics['attempt_number'],
-      start=self.request_timeout_start or request_timeout_params.get('start'),
-      maximum=self.request_timeout_max or request_timeout_params.get('maximum'),
-      increment=self.request_timeout_increment or request_timeout_params.get('increment'),
-    )
-
-    self.provider.timeout = request_timeout
-    self.provider.clean_parameters()
-    self.provider.refresh_timings()
-
-    try:
-      gen_events = self.provider.get_stream()
-    except Exception as e:
-      self.provider.last_exception = e
-      airouter.logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
-      raise e
-
+    gen_events = self._provider_stream(func=self._streamed_request_with_retry)
     self.full_generation_output = GenerationOutput()
 
+    start = time.time()
+    last_event = time.time()
+
     try:
-      start = time.time()
       for i, event in gen_events:
-        self.step_generation_output = self.provider.get_generation_output(event)
-        elapsed = time.time() - start
-        finished = self.step_generation_output.finish_reason is not None
-        crt_content = self.step_generation_output.content
-        crt_function_call = self.step_generation_output.function_call
-
-        self.full_generation_output.finish_reason = self.step_generation_output.finish_reason
-
-        if crt_content is not None:
-          if i == 0:
-            self.full_generation_output.content = ""
-          self.full_generation_output.content += crt_content
-
-          self.provider.set_speed(len(self.full_generation_output.content) / elapsed)
-
-          if i == 0 and self.on_first_chunk_callback is not None:
-            self.on_first_chunk_callback(self)
-
-          if i > 0 and self.on_new_chunk_callback is not None:
-            res = self.on_new_chunk_callback(self)
-            if res:
-              break
-
-        elif crt_function_call is not None:
-          if i == 0:
-            self.full_generation_output.function_call = FunctionCall(name=crt_function_call.name, arguments='')
-          self.full_generation_output.function_call.arguments += (crt_function_call.arguments or '')
-          self.provider.set_speed(len(self.full_generation_output.function_call.arguments) / elapsed)
-        #endif
-
-        if self._should_stop_prematurely() and not finished:
-          # do not stop prematurely if it's exactly the last chunk
+        last_event = time.time()
+        r = self._handle_stream_step(i, event, start)
+        if r == 'break':
+          break
+        elif r == 'return':
           return
       #endfor
     except Exception as e:
+      elapsed_from_last_event = time.time() - last_event
       self.provider.last_exception = e
-      airouter.logger.error(f"Exception of type '{type(e)}': {e}")
+      airouter.logger.error(
+        f"Exception of type '{type(e)}': {e}. Elapsed from last event: {elapsed_from_last_event:.2f}s"
+      )
       raise e
 
     if self.full_generation_output.content is not None:
@@ -292,6 +344,39 @@ class StreamedCompletion(object):
 
     self.provider.set_execution_time(time.time() - start)
     return self.full_generation_output
+
+  @retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    after=after_log(airouter.logger, logging.INFO),
+    retry_error_callback=lambda retry_state: None,
+  )
+  def generator(self):
+    self.log_info(f"Start generator call id `{self.call_id}` (provider={self.provider_name}, llm={self.llm})")
+    if self._should_stop_prematurely():
+      return
+
+    gen_events = self._provider_stream(func=self.generator)
+    self.full_generation_output = GenerationOutput()
+
+    try:
+      start = time.time()
+      for i, event in gen_events:
+        r = self._handle_stream_step(i, event, start)
+        if r == 'break':
+          break
+        elif r == 'return':
+          return
+        if self.step_generation_output.content is not None:
+          yield self.step_generation_output.content
+      #endfor
+    except Exception as e:
+      self.provider.last_exception = e
+      airouter.logger.error(f"Exception of type '{type(e)}': {e}")
+      raise e
+
+    self.log_info(f"End generator call id `{self.call_id}` (provider={self.provider_name}, llm={self.llm})")
+    return
 
   def run(self):
     self.log_info(f"Start call id `{self.call_id}` (provider={self.provider_name}, llm={self.llm})")
@@ -325,3 +410,7 @@ class StreamedCompletion(object):
   def log_info(self, msg):
     if self.verbose:
       airouter.logger.info(msg)
+
+  def log_warning(self, msg):
+    if self.verbose:
+      airouter.logger.warning(msg)

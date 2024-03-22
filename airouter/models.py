@@ -11,6 +11,7 @@ class ProviderName(str, Enum):
   OPENAI = "openai",
   VERTEX_AI_TEXT = "vertex_ai_text"
   AWS_BEDROCK = "aws_bedrock"
+  AZURE_OPENAI = "azure_openai"
 
   @classmethod
   def from_str(cls, value):
@@ -62,9 +63,12 @@ def process_llm(llm: t.Union[str, LLM]) -> t.Tuple[ProviderName, LLM]:
 
   infered_provider_name = map_llm_to_provider[llm]
   if provider_name is not None and infered_provider_name != provider_name:
-    print("Warning!")
+    # print("Warning!")
+    pass
 
-  return infered_provider_name, llm
+  provider_name = provider_name or infered_provider_name
+
+  return provider_name, llm
 
 
 def get_provider_llms(provider_name: t.Union[str, ProviderName]):
