@@ -2,10 +2,12 @@ import typing as t
 from pydantic import BaseModel
 from enum import Enum
 
+
 class ChatRole(str, Enum):
   SYSTEM = "system"
   USER = "user"
   ASSISTANT = "assistant"
+
 
 class ProviderName(str, Enum):
   OPENAI = "openai",
@@ -20,6 +22,7 @@ class ProviderName(str, Enum):
       if item.value == value:
         return item
     raise ValueError(f"{value} is not a valid Provider")
+
 
 class LLM(str, Enum):
   GPT_3_5_TURBO = "gpt-3.5-turbo"
@@ -37,7 +40,7 @@ class LLM(str, Enum):
   GPT_4_32K = "gpt-4-32k"
   GPT_4_32K_0613 = "gpt-4-32k-0613"
 
-  GPT_4_1106_PREVIEW = "gpt-4-1106-preview" # 128K
+  GPT_4_1106_PREVIEW = "gpt-4-1106-preview"  # 128K
 
   ANTROPHIC_CLAUDE_INSTANT_V1 = "anthropic.claude-instant-v1"
   ANTROPHIC_CLAUDE_V2 = "anthropic.claude-v2"
@@ -59,6 +62,7 @@ class LLM(str, Enum):
       if item.value == value:
         return item
     raise ValueError(f"{value} is not a valid LLM")
+
 
 def process_llm(llm: t.Union[str, LLM]) -> t.Tuple[ProviderName, LLM]:
   provider_name = None
@@ -90,6 +94,7 @@ def get_provider_llms(provider_name: t.Union[str, ProviderName]):
 
   return map_provider_to_llms[provider_name]
 
+
 def get_llm_context_size(llm: t.Union[str, LLM]):
   _, llm = process_llm(llm)
   if llm not in map_context_size:
@@ -97,29 +102,35 @@ def get_llm_context_size(llm: t.Union[str, LLM]):
 
   return map_context_size[llm]
 
+
 class ChatMessage(BaseModel):
   role: ChatRole
   content: str
+
 
 class Function(BaseModel):
   name: str
   parameters: t.Optional[t.Dict] = None
   description: t.Optional[str] = None
 
+
 class FunctionCall(BaseModel):
   name: t.Optional[str] = None
   arguments: t.Optional[str] = None
+
 
 class Usage(BaseModel):
   prompt_tokens: t.Optional[int] = None
   completion_tokens: t.Optional[int] = None
   total_tokens: t.Optional[int] = None
 
+
 class GenerationOutput(BaseModel):
   finish_reason: t.Optional[str] = None
   content: t.Optional[str] = None
   function_call: t.Optional[FunctionCall] = None
   usage: t.Optional[Usage] = None
+
 
 Messages = t.List[ChatMessage]
 Functions = t.List[Function]
@@ -196,7 +207,7 @@ if True:
 
     LLM.PALM_TEXT_BISON_32K: 32_000,
 
-    LLM.MISTRAL: 8_192, # TODO: recheck
+    LLM.MISTRAL: 8_192,  # TODO: recheck
     LLM.MIXTRAL: 8_192,
     LLM.MIXTRAL_8X7B: 8_192,
     LLM.LLAMA2: 4_096,
