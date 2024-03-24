@@ -1,23 +1,23 @@
 [tool.poetry]
 name = "airouter"
-version = "0.1.10"
+version = "0.1.11"
 description = ""
 authors = ["Laurentiu Piciu <laurentiupiciu@gmail.com>", "Razvan Ciobanu <razvan.ciobanu59@gmail.com>"]
 readme = "README.md"
-
+# openai = "^1.2.0"
+# boto3 = "^1.28.82"
+# botocore = "^1.31.82"
+# google-cloud-aiplatform = "^1.36.1"
+# ollama = "^0.1.7"
 [tool.poetry.dependencies]
 python = "^3.10"
 requests = "^2.31.0"
-openai = "^1.2.0"
-boto3 = "^1.28.82"
-botocore = "^1.31.82"
 pydantic = "^2.4.2"
 tenacity = "^8.0"
-google-cloud-aiplatform = "^1.36.1"
 python-decouple = "^3.8"
 tiktoken = "^0.5.1"
 urwid = "^2.2.3"
-ollama = "^0.1.7"
+httpx = "^0.27.0"
 
 
 [build-system]
