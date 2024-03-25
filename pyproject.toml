@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "airouter"
-version = "0.1.11"
+version = "0.1.12"
 description = ""
 authors = ["Laurentiu Piciu <laurentiupiciu@gmail.com>", "Razvan Ciobanu <razvan.ciobanu59@gmail.com>"]
 readme = "README.md"
