@@ -12,7 +12,6 @@ from airouter.models import (
 )
 
 
-
 class Schema(BaseModel):
   model: LLM
   messages: Messages
