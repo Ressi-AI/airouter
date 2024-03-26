@@ -17,10 +17,27 @@ class OllamaProvider(BaseProvider):
     super(OllamaProvider, self).__init__(**kwargs)
     return
 
+  @property
+  def request_params(self):
+    params = {
+      "model": self.cleaned_parameters['model'],
+      "stream": self.cleaned_parameters['stream'],
+      "messages": self.cleaned_parameters['messages'],
+      "options": {}
+    }
+
+    if self.temperature is not None:
+      params["options"]["temperature"] = self.temperature
+    if self.max_tokens is not None:
+      params["options"]["num_predict"] = self.max_tokens
+
+    return params
+
   def get_response(self):
     ollama_client = ollama.Client(host=OLLAMA_HOST)
     response = ollama_client.chat(
-      **self.cleaned_parameters
+      # **self.cleaned_parameters
+      **self.request_params
     )
     return response
 
