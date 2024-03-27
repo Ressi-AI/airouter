@@ -3,6 +3,7 @@ import httpx
 from airouter.providers.base_provider import BaseProvider, GenerationOutput
 from airouter.models import map_context_size
 from airouter.providers.aws_bedrock_provider import AWSBedrockProvider
+from airouter.models import ChatRole
 from decouple import config
 
 PROVIDER_CONFIGURED = False
@@ -23,13 +24,36 @@ except:
 
 
 class AWSBedrockChatProvider(AWSBedrockProvider):
+
+  @property
+  def processed_messages(self):
+    messages = self.messages_dump
+    new_messages = []
+
+    for m in messages:
+      if m['role'] == ChatRole.SYSTEM:
+        m['role'] = ChatRole.USER.value
+
+    last_role = None
+    for m in messages:
+      if m['role'] != last_role:
+        new_messages.append(m)
+      else:
+        new_messages[-1]['content'] += (
+          '\n\n'
+          f"{m['content']}"
+        )
+      last_role = m['role']
+    #endfor
+    return new_messages
+
   @property
   def request_params(self):
     accept = "application/json"
     contentType = "application/json"
     modelId = self.model.value
     body = {
-      'messages': self.messages_dump,
+      'messages': self.processed_messages,
     }
     if self.max_tokens is not None:
       body['max_tokens'] = self.max_tokens
