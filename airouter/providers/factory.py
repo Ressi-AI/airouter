@@ -15,6 +15,10 @@ def provider_factory(provider_name, **llm_params) -> t.Optional[BaseProvider]:
     from airouter.providers.aws_bedrock_provider import AWSBedrockProvider
     return AWSBedrockProvider(stream=True, **llm_params)
 
+  if provider_name == ProviderName.AWS_BEDROCK_CHAT:
+    from airouter.providers.aws_bedrock_chat_provider import AWSBedrockChatProvider
+    return AWSBedrockChatProvider(stream=True, **llm_params)
+
   if provider_name == ProviderName.VERTEX_AI_TEXT:
     from airouter.providers.vertex_ai_text_provider import VertexAITextProvider
     return VertexAITextProvider(stream=True, **llm_params)

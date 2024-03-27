@@ -168,6 +168,15 @@ class BaseProvider(Schema, extra=Extra.allow, arbitrary_types_allowed=True):
     return prompt
 
   @property
+  def messages_dump(self):
+    messages_dump = []
+    for m in self.messages:
+      md = m.model_dump()
+      md['role'] = md['role'].value
+      messages_dump.append(md)
+    return messages_dump
+
+  @property
   def prompt_nr_characters(self):
     return len(self.messages_to_prompt)
 

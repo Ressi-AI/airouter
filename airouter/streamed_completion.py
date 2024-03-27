@@ -271,7 +271,7 @@ class StreamedCompletion(object):
     crt_content = self.step_generation_output.content
     crt_function_call = self.step_generation_output.function_call
 
-    self.full_generation_output.finish_reason = self.step_generation_output.finish_reason
+    self.full_generation_output.finish_reason = self.full_generation_output.finish_reason or self.step_generation_output.finish_reason
 
     first_response = self.full_generation_output.content is None and self.full_generation_output.function_call is None
 

@@ -13,6 +13,7 @@ class ProviderName(str, Enum):
   OPENAI = "openai",
   VERTEX_AI_TEXT = "vertex_ai_text"
   AWS_BEDROCK = "aws_bedrock"
+  AWS_BEDROCK_CHAT = "aws_bedrock_chat"
   OLLAMA = "ollama"
   AZURE_OPENAI = "azure_openai"
 
@@ -47,6 +48,7 @@ class LLM(str, Enum):
 
   ANTROPHIC_CLAUDE_INSTANT_V1 = "anthropic.claude-instant-v1"
   ANTROPHIC_CLAUDE_V2 = "anthropic.claude-v2"
+  ANTROPHIC_CLAUDE_V3_SONNET = "anthropic.claude-3-sonnet-20240229-v1:0"
 
   PALM_TEXT_BISON_32K = "text-bison-32k"
 
@@ -178,6 +180,9 @@ if True:
       LLM.ANTROPHIC_CLAUDE_INSTANT_V1,
       LLM.ANTROPHIC_CLAUDE_V2,
     ],
+    ProviderName.AWS_BEDROCK_CHAT: [
+      LLM.ANTROPHIC_CLAUDE_V3_SONNET,
+    ],
     ProviderName.VERTEX_AI_TEXT: [
       LLM.PALM_TEXT_BISON_32K,
     ],
@@ -224,6 +229,7 @@ if True:
 
     LLM.ANTROPHIC_CLAUDE_INSTANT_V1: 100_000,
     LLM.ANTROPHIC_CLAUDE_V2: 100_000,
+    LLM.ANTROPHIC_CLAUDE_V3_SONNET: 200_000,
 
     LLM.PALM_TEXT_BISON_32K: 32_000,
 

@@ -2,6 +2,7 @@ import json
 import httpx
 from airouter.providers.base_provider import BaseProvider, GenerationOutput
 from airouter.models import map_context_size
+from airouter.providers.aws_bedrock_provider import AWSBedrockProvider
 from decouple import config
 
 PROVIDER_CONFIGURED = False
@@ -15,31 +16,28 @@ try:
     aws_secret_access_key=config("AWS_SECRET_ACCESS_KEY"),
     region_name=config("AWS_DEFAULT_REGION"),
   )
+  ANTROPHIC_VERSION = config("ANTROPHIC_VERSION", default=None)
   PROVIDER_CONFIGURED = True
 except:
   pass
 
 
-class AWSBedrockProvider(BaseProvider):
-  def __init__(self, **kwargs):
-    assert PROVIDER_CONFIGURED
-    super(AWSBedrockProvider, self).__init__(**kwargs)
-    if self.max_tokens is None:
-      self.max_tokens = map_context_size[self.model]
-    return
-
+class AWSBedrockChatProvider(AWSBedrockProvider):
   @property
   def request_params(self):
     accept = "application/json"
     contentType = "application/json"
     modelId = self.model.value
     body = {
-      'prompt': self.messages_to_prompt,
+      'messages': self.messages_dump,
     }
     if self.max_tokens is not None:
-      body['max_tokens_to_sample'] = self.max_tokens
+      body['max_tokens'] = self.max_tokens
     if self.temperature is not None:
       body['temperature'] = self.temperature
+
+    if ANTROPHIC_VERSION is not None:
+        body['anthropic_version'] = ANTROPHIC_VERSION
 
     return {
       'body': json.dumps(body),
@@ -48,40 +46,21 @@ class AWSBedrockProvider(BaseProvider):
       'contentType': contentType,
     }
 
-  def get_response(self):
-    aws_config = None
-    if self.timeout is not None:
-      if isinstance(self.timeout, float):
-        self.timeout = httpx.Timeout(self.timeout)
-      aws_config = Config(
-        connect_timeout=self.timeout.connect,
-        read_timeout=self.timeout.read,
-        retries={'max_attempts': 0}
-      )
-
-    boto3_sess = boto3.Session(**BOTO3_KWARGS)
-    boto3_bedrock = boto3_sess.client(
-      service_name='bedrock-runtime',
-      config=aws_config,
-      **BOTO3_KWARGS
-    )
-    self._attrs['boto3_sess'] = boto3_sess
-    self._attrs['boto3_bedrock'] = boto3_bedrock
-
-    response = self._attrs['boto3_bedrock'].invoke_model_with_response_stream(**self.request_params)
-    response = response.get('body')
-    return response
-
   def get_generation_output(self, event) -> GenerationOutput:
     chunk = event.get('chunk')
     if chunk:
       chunk_obj = json.loads(chunk.get('bytes').decode())
-      text = chunk_obj['completion']
+      chunk_type = chunk_obj.get('type')
+      if chunk_type not in ['content_block_delta', 'message_delta']:
+        return GenerationOutput()
 
-      kwargs = {
-        'content': text,
-      }
-      return GenerationOutput(**kwargs)
+      if chunk_type == 'content_block_delta':
+        text = chunk_obj['delta']['text']
+        return GenerationOutput(content=text)
+
+      elif chunk_type == 'message_delta':
+        stop_reason = chunk_obj['delta']['stop_reason']
+        return GenerationOutput(finish_reason=stop_reason)
 
     return GenerationOutput()
 
