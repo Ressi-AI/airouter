@@ -53,10 +53,16 @@ class LLM(str, Enum):
   MISTRAL = 'mistral'
   MIXTRAL = 'mixtral'
   MIXTRAL_8X7B = 'mixtral:8x7b'
+  MIXTRAL_TEXT = 'mixtral:text'
+  MIXTRAL_TEXT_Q2 = '8x7b-text-v0.1-q2_K'
   LLAMA2 = 'llama2'
   LLAMA2_TEXT = 'llama2_text'
   LLAMA2_13B = 'llama2:13b'
+  LLAMA2_13B_TEXT = 'llama2:13b-text'
   LLAMA2_70B = 'llama2:70b'
+  LLAMA2_70B_TEXT = 'llama2:70b-text'
+  LLAMA2_70B_TEXT_Q2 = 'llama2:70b-text-q2_K'
+  LLAMA2_70B_TEXT_Q3 = 'llama2:70b-text-q3_K_L'
 
 
   @classmethod
@@ -179,11 +185,17 @@ if True:
       LLM.MISTRAL,
       LLM.MIXTRAL,
       LLM.MIXTRAL_8X7B,
+      LLM.MIXTRAL_TEXT,
+      LLM.MIXTRAL_TEXT_Q2,
 
       LLM.LLAMA2,
       LLM.LLAMA2_TEXT,
       LLM.LLAMA2_13B,
+      LLM.LLAMA2_13B_TEXT,
       LLM.LLAMA2_70B,
+      LLM.LLAMA2_70B_TEXT,
+      LLM.LLAMA2_70B_TEXT_Q2,
+      LLM.LLAMA2_70B_TEXT_Q3
     ]
   }
 
@@ -218,10 +230,16 @@ if True:
     LLM.MISTRAL: 8_192,  # TODO: recheck
     LLM.MIXTRAL: 8_192,
     LLM.MIXTRAL_8X7B: 8_192,
+    LLM.MIXTRAL_TEXT: 8_192,
+    LLM.MIXTRAL_TEXT_Q2: 8_192,
     LLM.LLAMA2: 4_096,
     LLM.LLAMA2_TEXT: 4_096,
     LLM.LLAMA2_13B: 4_096,
+    LLM.LLAMA2_13B_TEXT: 4_096,
     LLM.LLAMA2_70B: 4_096,
+    LLM.LLAMA2_70B_TEXT: 4_096,
+    LLM.LLAMA2_70B_TEXT_Q2: 4_096,
+    LLM.LLAMA2_70B_TEXT_Q3: 4_096,
 
   }
 
