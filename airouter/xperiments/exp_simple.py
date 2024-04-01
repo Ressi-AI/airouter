@@ -1,9 +1,10 @@
 import airouter
+from airouter.models import LLM
 
 if __name__ == '__main__':
 
     outputs = airouter.StreamedCompletion.create(
-      model='anthropic.claude-3-sonnet-20240229-v1:0',
+      model=f'azure_openai/{LLM.GPT_4_1106_PREVIEW}',
       temperature=0.0,
       max_tokens=100,
       messages=[

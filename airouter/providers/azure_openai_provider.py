@@ -8,8 +8,8 @@ try:
   import openai
   os.environ['AZURE_OPENAI_ENDPOINT'] = decouple.config("AZURE_OPENAI_ENDPOINT")
   os.environ['AZURE_OPENAI_API_KEY'] = decouple.config("AZURE_OPENAI_API_KEY")
-  os.environ['AZURE_OPENAI_API_VERSION'] = decouple.config("OPENAI_API_VERSION", default="2023-09-01-preview") or \
-                                           decouple.config("AZURE_OPENAI_API_VERSION", default="2023-09-01-preview")
+  os.environ['OPENAI_API_VERSION'] = decouple.config("OPENAI_API_VERSION", default="2023-09-01-preview") or \
+                                     decouple.config("AZURE_OPENAI_API_VERSION", default="2023-09-01-preview")
   PROVIDER_CONFIGURED = True
 except:
   pass
@@ -22,4 +22,4 @@ class AzureOpenAIProvider(OpenAIProvider):
 
   @property
   def openai_client(self):
-    return openai.AzureOpenAI(api_version=os.environ['AZURE_OPENAI_API_VERSION'])
+    return openai.AzureOpenAI(azure_deployment=self.model.replace(".", ""))
