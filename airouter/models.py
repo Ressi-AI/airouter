@@ -42,6 +42,8 @@ class LLM(str, Enum):
   GPT_4_32K = "gpt-4-32k"
   GPT_4_32K_0613 = "gpt-4-32k-0613"
 
+  GPT_4_TURBO = "gpt-4-turbo"
+  GPT_4_TURBO_2024_04_09 = "gpt-4-turbo-2024-04-09"
   GPT_4_1106_PREVIEW = "gpt-4-1106-preview"  # 128K
   GPT_4_TURBO_PREVIEW = "gpt-4-turbo-preview"
   GPT_4_0125_PREVIEW = "gpt-4-0125-preview"
@@ -172,6 +174,8 @@ if True:
       LLM.GPT_4_32K,
       LLM.GPT_4_32K_0613,
 
+      LLM.GPT_4_TURBO,
+      LLM.GPT_4_TURBO_2024_04_09,
       LLM.GPT_4_TURBO_PREVIEW,
       LLM.GPT_4_1106_PREVIEW,
       LLM.GPT_4_0125_PREVIEW,
@@ -223,6 +227,8 @@ if True:
     LLM.GPT_4_32K: 32_768,
     LLM.GPT_4_32K_0613: 32_768,
 
+    LLM.GPT_4_TURBO: 128_000,
+    LLM.GPT_4_TURBO_2024_04_09: 128_000,
     LLM.GPT_4_1106_PREVIEW: 128_000,
     LLM.GPT_4_TURBO_PREVIEW: 128_000,
     LLM.GPT_4_0125_PREVIEW: 128_000,

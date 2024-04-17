@@ -332,7 +332,7 @@ class StreamedCompletion(object):
       elapsed_from_last_event = time.time() - last_event
       self.provider.last_exception = e
       airouter.logger.error(
-        f"Exception of type '{type(e)}': {e}. Elapsed from last event: {elapsed_from_last_event:.2f}s"
+        f"Exception of type '{type(e)}': {e}. Elapsed from last event: {elapsed_from_last_event:.2f}s. Managed to generate until now: {self.full_generation_output.content}"
       )
       raise e
 
