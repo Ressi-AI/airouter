@@ -26,6 +26,7 @@ MultipleCreateOutputs = t.List[SingleCreateOutput]
 class StreamedCompletion(object):
   def __init__(
       self,
+      logger=None,
       call_name: t.Optional[str] = None,
       completion_timeout: t.Optional[int] = None,
       request_timeout_start: t.Optional[float] = None,
@@ -37,6 +38,8 @@ class StreamedCompletion(object):
       verbose: t.Optional[bool] = True,
       **llm_params
   ):
+    self.logger = logger or airouter.logger
+
     model = llm_params.get('model')
     if model is None:
       raise ValueError("model cannot be None")
@@ -140,6 +143,7 @@ class StreamedCompletion(object):
   @classmethod
   def create(
       cls,
+      logger=None,
       call_name: t.Optional[str] = None,
       completion_timeout: t.Optional[int] = None,
       request_timeout_start: t.Optional[float] = None,
@@ -155,6 +159,7 @@ class StreamedCompletion(object):
   ) -> t.Union[SingleCreateOutput, MultipleCreateOutputs]:
 
     base_kwargs = dict(
+      logger=logger,
       call_name=call_name,
       completion_timeout=completion_timeout,
       request_timeout_start=request_timeout_start,
@@ -181,6 +186,7 @@ class StreamedCompletion(object):
     #endif
 
     completion = cls(
+      logger=logger,
       call_name=call_name,
       completion_timeout=completion_timeout,
       request_timeout_start=request_timeout_start,
@@ -261,7 +267,7 @@ class StreamedCompletion(object):
       return gen_events
     except Exception as e:
       self.provider.last_exception = e
-      airouter.logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
+      self.logger.error(f"Exception of type '{type(e)}' for `get_stream`: {e}")
       raise e
 
   def _handle_stream_step(self, i, event, start):
@@ -331,7 +337,7 @@ class StreamedCompletion(object):
     except Exception as e:
       elapsed_from_last_event = time.time() - last_event
       self.provider.last_exception = e
-      airouter.logger.error(
+      self.logger.error(
         f"Exception of type '{type(e)}': {e}. Elapsed from last event: {elapsed_from_last_event:.2f}s. Managed to generate until now: {self.full_generation_output.content}"
       )
       raise e
@@ -372,7 +378,7 @@ class StreamedCompletion(object):
       #endfor
     except Exception as e:
       self.provider.last_exception = e
-      airouter.logger.error(f"Exception of type '{type(e)}': {e}")
+      self.logger.error(f"Exception of type '{type(e)}': {e}")
       raise e
 
     self.log_info(f"End generator call id `{self.call_id}` (provider={self.provider_name}, llm={self.llm})")
@@ -409,8 +415,8 @@ class StreamedCompletion(object):
 
   def log_info(self, msg):
     if self.verbose:
-      airouter.logger.info(msg)
+      self.logger.info(msg)
 
   def log_warning(self, msg):
     if self.verbose:
-      airouter.logger.warning(msg)
+      self.logger.warning(msg)

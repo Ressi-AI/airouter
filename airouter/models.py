@@ -48,6 +48,9 @@ class LLM(str, Enum):
   GPT_4_TURBO_PREVIEW = "gpt-4-turbo-preview"
   GPT_4_0125_PREVIEW = "gpt-4-0125-preview"
 
+  GPT_4o = "gpt-4o"
+  GPT_4o_2024_05_13 = "gpt-4o-2024-05-13"
+
   ANTROPHIC_CLAUDE_INSTANT_V1 = "anthropic.claude-instant-v1"
   ANTROPHIC_CLAUDE_V2 = "anthropic.claude-v2"
   ANTROPHIC_CLAUDE_V3_SONNET = "anthropic.claude-3-sonnet-20240229-v1:0"
@@ -179,6 +182,9 @@ if True:
       LLM.GPT_4_TURBO_PREVIEW,
       LLM.GPT_4_1106_PREVIEW,
       LLM.GPT_4_0125_PREVIEW,
+
+      LLM.GPT_4o,
+      LLM.GPT_4o_2024_05_13,
     ],
     ProviderName.AWS_BEDROCK: [
       LLM.ANTROPHIC_CLAUDE_INSTANT_V1,
@@ -232,6 +238,9 @@ if True:
     LLM.GPT_4_1106_PREVIEW: 128_000,
     LLM.GPT_4_TURBO_PREVIEW: 128_000,
     LLM.GPT_4_0125_PREVIEW: 128_000,
+
+    LLM.GPT_4o: 128_000,
+    LLM.GPT_4o_2024_05_13: 128_000,
 
     LLM.ANTROPHIC_CLAUDE_INSTANT_V1: 100_000,
     LLM.ANTROPHIC_CLAUDE_V2: 100_000,
